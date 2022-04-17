@@ -306,7 +306,7 @@ def main():
                 print("Decaying learning rate to %g" % scheduler.get_lr()[0])
             train_model(model, data, optim, i, params)
         for metric in config.metrics:
-            print_log("Best %s score: %.2f\n" % (metric, max(params[metric])))
+            print_log("Best %s score: %.5f\n" % (metric, max(params[metric])))
     else:
         score = eval_model(model, data, params) 
 
