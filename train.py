@@ -203,8 +203,8 @@ def eval_model(model, data, params):
             src_len = src_len.cuda()
 
         with torch.no_grad():
-            if config.beam_size > 1 and (not config.global_emb):
-                samples, alignment, _ = model.beam_sample(src, src_len, beam_size=config.beam_size, eval_=True)
+            if config.train_beam_size > 1 and (not config.global_emb):
+                samples, alignment, _ = model.beam_sample(src, src_len, beam_size=config.train_beam_size, eval_=True)
             else:
                 samples, alignment = model.sample(src, src_len)
 
@@ -280,7 +280,7 @@ def main():
     # checkpoint
     if opt.restore:
         print('loading checkpoint...\n')
-        checkpoints = torch.load(opt.restore)
+        checkpoints = torch.load(opt.restore, map_location='cuda:0')
     else:
         checkpoints = None
 

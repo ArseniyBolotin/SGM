@@ -12,14 +12,14 @@ class rnn_encoder(nn.Module):
         super(rnn_encoder, self).__init__()
 
         self.config = config
-        self.hidden_size = config.hidden_size
+        self.hidden_size = config.encoder_hidden_size
         self.embedding = embedding if embedding is not None else nn.Embedding(config.src_vocab_size, config.emb_size)
         if config.cell == 'gru':
-            self.rnn = nn.GRU(input_size=config.emb_size, hidden_size=config.hidden_size,
+            self.rnn = nn.GRU(input_size=config.emb_size, hidden_size=self.hidden_size,
                               num_layers=config.enc_num_layers, dropout=config.dropout,
                               bidirectional=config.bidirectional)
         else:
-            self.rnn = nn.LSTM(input_size=config.emb_size, hidden_size=config.hidden_size,
+            self.rnn = nn.LSTM(input_size=config.emb_size, hidden_size=self.hidden_size,
                                num_layers=config.enc_num_layers, dropout=config.dropout,
                                bidirectional=config.bidirectional)
 
@@ -45,27 +45,27 @@ class rnn_decoder(nn.Module):
         super(rnn_decoder, self).__init__()
 
         self.config = config
-        self.hidden_size = config.hidden_size
+        self.hidden_size = config.decoder_hidden_size
         self.embedding = embedding if embedding is not None else nn.Embedding(config.tgt_vocab_size, config.emb_size)
         input_size = 2 * config.emb_size if config.global_emb else config.emb_size 
 
         if config.cell == 'gru':
-            self.rnn = StackedGRU(input_size=input_size, hidden_size=config.hidden_size,
+            self.rnn = StackedGRU(input_size=input_size, hidden_size=self.hidden_size,
                                   num_layers=config.dec_num_layers, dropout=config.dropout)
         else:
-            self.rnn = StackedLSTM(input_size=input_size, hidden_size=config.hidden_size,
+            self.rnn = StackedLSTM(input_size=input_size, hidden_size=self.hidden_size,
                                    num_layers=config.dec_num_layers, dropout=config.dropout)
 
-        self.linear = nn.Linear(config.hidden_size, config.tgt_vocab_size)
+        self.linear = nn.Linear(self.hidden_size, config.tgt_vocab_size)
 
         if not use_attention or config.attention == 'None':
             self.attention = None
         elif config.attention == 'bahdanau':
-            self.attention = models.bahdanau_attention(config.hidden_size, input_size)
+            self.attention = models.bahdanau_attention(self.hidden_size, input_size)
         elif config.attention == 'luong':
-            self.attention = models.luong_attention(config.hidden_size, input_size, config.pool_size)
+            self.attention = models.luong_attention(self.hidden_size, input_size, config.pool_size)
         elif config.attention == 'luong_gate':
-            self.attention = models.luong_gate_attention(config.hidden_size, input_size)
+            self.attention = models.luong_gate_attention(self.hidden_size, input_size)
         
         self.dropout = nn.Dropout(config.dropout)
         

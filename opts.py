@@ -1,11 +1,10 @@
 def model_opts(parser):
 
-    parser.add_argument('-config', default='config.yaml', type=str,
-                        help="config file")
+    parser.add_argument('-config', required=True, type=str, help="config file")
+    parser.add_argument('-label_dict_file', required=True, type=str, help="label_dict")
     parser.add_argument('-gpus', default=[], nargs='+', type=int,
                         help="use CUDA on the listed devices.")
-    parser.add_argument('-restore', default='./checkpoints/sgmge.pt', type=str,
-                        help="restore checkpoint")
+    parser.add_argument('-restore', type=str, help="restore checkpoint")
     parser.add_argument('-seed', default=1234, type=int, 
                         help="random seed")
     parser.add_argument('-model', default='seq2seq', type=str,
@@ -36,12 +35,12 @@ def model_opts(parser):
                         help="split number for splitres")
     parser.add_argument('-pretrain', default='', type=str, 
                         help="load pretrain encoder")
-    parser.add_argument('-label_dict_file', default='./data/topic_sorted.json', type=str,
-                        help="label_dict")
 
 
-def convert_to_config(opt, config):
+def wconvert_to_config(opt, config):
+    print(config)
     opt = vars(opt)
+    print(opt)
     for key in opt:
         if key not in config:
             config[key] = opt[key]
