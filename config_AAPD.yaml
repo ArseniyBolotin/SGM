@@ -1,5 +1,6 @@
-data: './AAPD_data/save_data/'
-logF: 'AAPD_exp/'
+data: './data_AAPD/save_data/'
+label_dict_file: 'data_AAPD/topic_sorted.json'
+logF: 'exp_AAPD/'
 epoch: 20
 batch_size: 64
 optim: 'adam'

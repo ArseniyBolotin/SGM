@@ -1,7 +1,7 @@
 def model_opts(parser):
 
     parser.add_argument('-config', required=True, type=str, help="config file")
-    parser.add_argument('-label_dict_file', required=True, type=str, help="label_dict")
+    parser.add_argument('-label_dict_file', type=str, help="label_dict")
     parser.add_argument('-gpus', default=[], nargs='+', type=int,
                         help="use CUDA on the listed devices.")
     parser.add_argument('-restore', type=str, help="restore checkpoint")
@@ -37,10 +37,8 @@ def model_opts(parser):
                         help="load pretrain encoder")
 
 
-def wconvert_to_config(opt, config):
-    print(config)
+def convert_to_config(opt, config):
     opt = vars(opt)
-    print(opt)
     for key in opt:
         if key not in config:
             config[key] = opt[key]

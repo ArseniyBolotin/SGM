@@ -35,7 +35,7 @@ if use_cuda:
     torch.cuda.manual_seed(opt.seed)
     torch.backends.cudnn.deterministic = True
 
-with codecs.open(opt.label_dict_file, 'r', 'utf-8') as f:
+with codecs.open(config.label_dict_file, 'r', 'utf-8') as f:
     label_dict = json.load(f)
 
 
