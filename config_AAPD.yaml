@@ -1,7 +1,7 @@
 data: './data_AAPD/save_data/'
 label_dict_file: 'data_AAPD/topic_sorted.json'
 logF: 'exp_AAPD/'
-epoch: 20
+epoch: 10
 batch_size: 64
 optim: 'adam'
 cell: 'lstm'
@@ -11,7 +11,7 @@ max_grad_norm: 10
 learning_rate_decay: 0.5
 start_decay_at: 2
 emb_size: 256
-encoder_hidden_size: 256
+encoder_hidden_size: 512
 decoder_hidden_size: 512
 enc_num_layers: 2
 dec_num_layers: 1
