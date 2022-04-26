@@ -6,13 +6,13 @@ batch_size: 8
 optim: 'adam'
 cell: 'lstm'
 attention: 'luong_gate'
-learning_rate: 0.001
+learning_rate: 0.00002
 max_grad_norm: 10
 learning_rate_decay: 0.5
 start_decay_at: 2
 emb_size: 256
-encoder_hidden_size: 256
-decoder_hidden_size: 256
+encoder_hidden_size: 512
+decoder_hidden_size: 512
 enc_num_layers: 2
 dec_num_layers: 1
 bidirectional: True
