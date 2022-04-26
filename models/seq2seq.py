@@ -69,7 +69,7 @@ class seq2seq(nn.Module):
         
         if not self.use_bert:
             src = torch.index_select(src, dim=0, index=indices)
-        bos = torch.ones(len(src) if self.use_bert else src.size(0)).long().fill_(utils.BOS)
+        bos = torch.ones(src['input_ids'].size(0) if self.use_bert else src.size(0)).long().fill_(utils.BOS)
         if not self.use_bert:
             src = src.t()
 
