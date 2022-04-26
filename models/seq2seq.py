@@ -2,15 +2,18 @@ import torch
 import torch.nn as nn
 import utils
 import models
+from utils.common import apply_to_dict_values
 
 
 class seq2seq(nn.Module):
 
     def __init__(self, config, use_attention=True, encoder=None, decoder=None):
         super(seq2seq, self).__init__()
-
+        self.use_bert = bool(config.bert_tsv_dir)
         if encoder is not None:
             self.encoder = encoder
+        elif self.use_bert:
+            self.encoder = models.BertEncdoer(hidden_size=config.encoder_hidden_size)
         else:
             self.encoder = models.rnn_encoder(config)
         tgt_embedding = self.encoder.embedding if config.shared_vocab else None
@@ -38,8 +41,8 @@ class seq2seq(nn.Module):
             dec: [bs, tgt_len] (bos, x1, ..., xn)
             targets: [bs, tgt_len] (x1, ..., xn, eos)
         """
-
-        src = src.t()
+        if not self.use_bert:
+            src = src.t()
         dec = dec.t()
         targets = targets.t()
 
@@ -63,9 +66,12 @@ class seq2seq(nn.Module):
 
         lengths, indices = torch.sort(src_len, dim=0, descending=True)
         _, reverse_indices = torch.sort(indices)
-        src = torch.index_select(src, dim=0, index=indices)
-        bos = torch.ones(src.size(0)).long().fill_(utils.BOS)
-        src = src.t()
+        
+        if not self.use_bert:
+            src = torch.index_select(src, dim=0, index=indices)
+        bos = torch.ones(len(src) if self.use_bert else src.size(0)).long().fill_(utils.BOS)
+        if not self.use_bert:
+            src = src.t()
 
         if self.use_cuda:
             bos = bos.cuda()

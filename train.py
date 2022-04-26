@@ -41,22 +41,35 @@ with codecs.open(config.label_dict_file, 'r', 'utf-8') as f:
 
 def load_data():
     print('loading data...\n')
-    data = pickle.load(open(config.data+'data.pkl', 'rb'))
-    data['train']['length'] = int(data['train']['length'] * opt.scale)
+    if config.bert_tsv_dir:
+        trainset = utils.AAPDDataset(config.bert_tsv_dir + '/train.tsv')
+        validset = utils.AAPDDataset(config.bert_tsv_dir + '/validation.tsv')
+        src_vocab = utils.Dict([utils.PAD_WORD, utils.UNK_WORD, utils.BOS_WORD, utils.EOS_WORD])
+        tgt_vocab = utils.Dict()
+        for label, index in utils.AAPDDataset.topic_num_map.items():
+            tgt_vocab.add(label, index)
+        tgt_vocab.addSpecials([utils.PAD_WORD, utils.UNK_WORD, utils.BOS_WORD, utils.EOS_WORD])
+        config.src_vocab_size = -1
+        config.tgt_vocab_size = tgt_vocab.size()
+        
+    else:
+        data = pickle.load(open(config.data+'data.pkl', 'rb'))
+        data['train']['length'] = int(data['train']['length'] * opt.scale)
 
-    trainset = utils.BiDataset(data['train'], char=config.char)
-    validset = utils.BiDataset(data['valid'], char=config.char)
+        trainset = utils.BiDataset(data['train'], char=config.char)
+        validset = utils.BiDataset(data['valid'], char=config.char)
 
-    src_vocab = data['dict']['src']
-    tgt_vocab = data['dict']['tgt']
-    config.src_vocab_size = src_vocab.size()
-    config.tgt_vocab_size = tgt_vocab.size()
+        src_vocab = data['dict']['src']
+        tgt_vocab = data['dict']['tgt']
+        config.src_vocab_size = src_vocab.size()
+        config.tgt_vocab_size = tgt_vocab.size()
 
+    collate = utils.bert_padding if config.bert_tsv_dir else utils.padding
     trainloader = torch.utils.data.DataLoader(dataset=trainset,
                                               batch_size=config.batch_size,
                                               shuffle=True,
                                               num_workers=0,
-                                              collate_fn=utils.padding)
+                                              collate_fn=collate)
     if hasattr(config, 'valid_batch_size'):
         valid_batch_size = config.valid_batch_size
     else:
@@ -65,7 +78,7 @@ def load_data():
                                               batch_size=valid_batch_size,
                                               shuffle=False,
                                               num_workers=0,
-                                              collate_fn=utils.padding)
+                                              collate_fn=collate)
 
     return {'trainset': trainset, 'validset': validset, 
             'trainloader': trainloader, 'validloader': validloader, 
@@ -106,7 +119,8 @@ def build_model(checkpoints, print_log):
     for k, v in config.items():
         print_log("%s:\t%s\n" % (str(k), str(v)))
     print_log("\n")
-    print_log(repr(model) + "\n\n")
+    if config.print_model:
+        print_log(repr(model) + "\n\n")
     print_log('total number of parameters: %d\n\n' % param_count)
 
     return model, optim, print_log
@@ -122,25 +136,22 @@ def train_model(model, data, optim, epoch, params):
         model.zero_grad()
 
         if config.use_cuda:
-            src = src.cuda()
+            if config.bert_tsv_dir:
+                utils.apply_to_dict_values(src, lambda x: x.cuda())
+            else:
+                src = src.cuda()
             tgt = tgt.cuda()
             src_len = src_len.cuda()
 
         lengths, indices = torch.sort(src_len, dim=0, descending=True)
-        src = torch.index_select(src, dim=0, index=indices)
-        tgt = torch.index_select(tgt, dim=0, index=indices)
+        if not config.bert_tsv_dir:
+            src = torch.index_select(src, dim=0, index=indices)
+            tgt = torch.index_select(tgt, dim=0, index=indices)
         dec = tgt[:, :-1]
         targets = tgt[:, 1:]
 
         try:
-            if config.schesamp:
-                if epoch > 8:
-                    e = epoch - 8
-                    loss, outputs = model(src, lengths, dec, targets, teacher_ratio=0.9**e)
-                else:
-                    loss, outputs = model(src, lengths, dec, targets)
-            else:
-                loss, outputs = model(src, lengths, dec, targets)
+            loss, outputs = model(src, lengths, dec, targets)
 
             pred = outputs.max(2)[1]
             targets = targets.t()
@@ -199,8 +210,11 @@ def eval_model(model, data, params):
     for src, tgt, src_len, tgt_len, original_src, original_tgt in validloader:
 
         if config.use_cuda:
-            src = src.cuda()
-            src_len = src_len.cuda()
+            if config.bert_tsv_dir:
+                utils.apply_to_dict_values(src, lambda x: x.cuda())
+            else:
+                src = src.cuda()
+        src_len = src_len.cuda()
 
         with torch.no_grad():
             if config.train_beam_size > 1 and (not config.global_emb):
