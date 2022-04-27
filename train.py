@@ -46,9 +46,9 @@ def load_data():
         validset = utils.AAPDDataset(config.bert_tsv_dir + '/validation.tsv')
         src_vocab = utils.Dict([utils.PAD_WORD, utils.UNK_WORD, utils.BOS_WORD, utils.EOS_WORD])
         tgt_vocab = utils.Dict()
-        for label, index in utils.AAPDDataset.topic_num_map.items():
-            tgt_vocab.add(label, index)
         tgt_vocab.addSpecials([utils.PAD_WORD, utils.UNK_WORD, utils.BOS_WORD, utils.EOS_WORD])
+        for label in utils.AAPDDataset.get_labels():
+            tgt_vocab.add(label)
         config.src_vocab_size = -1
         config.tgt_vocab_size = tgt_vocab.size()
         
