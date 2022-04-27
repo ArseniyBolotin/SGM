@@ -57,6 +57,7 @@ class BiDataset(torch_data.Dataset):
         original_src = linecache.getline(self.original_srcF, index+1).strip().split()
         original_tgt = linecache.getline(self.original_tgtF, index+1).strip().split() if not self.char else \
                        list(linecache.getline(self.original_tgtF, index + 1).strip())
+        
 
         return src, tgt, original_src, original_tgt
 
@@ -70,9 +71,12 @@ class AAPDDataset(torch_data.Dataset):
 
     _topic_num_map = {"cs.it": 0, "math.it": 1, "cs.lg": 2, "cs.ai": 3, "stat.ml": 4, "cs.ds": 5, "cs.si": 6, "cs.dm": 7, "physics.soc-ph": 8, "cs.lo": 9, "math.co": 10, "cs.cc": 11, "math.oc": 12, "cs.ni": 13, "cs.cv": 14, "cs.cl": 15, "cs.cr": 16, "cs.sy": 17, "cs.dc": 18, "cs.ne": 19, "cs.ir": 20, "quant-ph": 21, "cs.gt": 22, "cs.cy": 23, "cs.pl": 24, "cs.se": 25, "math.pr": 26, "cs.db": 27, "cs.cg": 28, "cs.na": 29, "cs.hc": 30, "math.na": 31, "cs.ce": 32, "cs.ma": 33, "cs.ro": 34, "cs.fl": 35, "math.st": 36, "stat.th": 37, "cs.dl": 38, "cmp-lg": 39, "cs.mm": 40, "cond-mat.stat-mech": 41, "cs.pf": 42, "math.lo": 43, "stat.ap": 44, "cs.ms": 45, "stat.me": 46, "cs.sc": 47, "cond-mat.dis-nn": 48, "q-bio.nc": 49, "physics.data-an": 50, "nlin.ao": 51, "q-bio.qm": 52, "math.nt": 53}
 
-    def __init__(self, tsv_path, bert_type="bert-base-uncased"):
+    def __init__(self, tsv_path, bert_type="bert-base-uncased", n_specials=4, bos_index=2, eos_index=3):
         
         self._topic_num_map_reversed = {v: k for k, v in AAPDDataset._topic_num_map.items()}
+        self.n_specials = n_specials
+        self.bos_index = bos_index
+        self.eos_index = eos_index
         self.bert_type = bert_type
         self.path = tsv_path
         self.data = pd.read_csv(self.path, sep='\t', header=None)
@@ -85,15 +89,14 @@ class AAPDDataset(torch_data.Dataset):
     def get_labels():
         return list(AAPDDataset._topic_num_map.keys())
 
-    @staticmethod
-    def target_to_tensor(target):
-        return torch.tensor([index for index, label in enumerate(target) if int(label) == 1])
+    def target_to_tensor(self, target):
+        return torch.tensor([self.bos_index] + [index + self.n_specials for index, label in enumerate(target) if int(label) == 1] + [self.eos_index])
 
     def __getitem__(self, idx):
         data = self.tokenizer(self.data.iloc[idx, 1], return_tensors="pt", max_length=512, padding="max_length", truncation=True) # max_len=512 !DocBERT
         utils.apply_to_dict_values(data, lambda x: x.flatten())
         original_tgt = [self._topic_num_map_reversed[index] for index, label in enumerate(self.data.iloc[idx, 0]) if int(label) == 1]
-        return data, AAPDDataset.target_to_tensor(self.data.iloc[idx, 0]), self.data.iloc[idx, 1], original_tgt
+        return data, self.target_to_tensor(self.data.iloc[idx, 0]), self.data.iloc[idx, 1], original_tgt
 
 
 def splitDataset(data_set, sizes):
