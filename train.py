@@ -188,7 +188,8 @@ def train_model(model, data, optim, epoch, params):
                 if score[metric] >= max(params[metric]):
                     with codecs.open(params['log_path']+'best_'+metric+'_prediction.txt','w','utf-8') as f:
                         f.write(codecs.open(params['log_path']+'candidate.txt','r','utf-8').read())
-                    save_model(params['log_path']+'best_'+metric+'_checkpoint.pt', model, optim, params['updates'])
+                    if config.save_best_model:
+                        save_model(params['log_path']+'best_'+metric+'_checkpoint.pt', model, optim, params['updates'])
             model.train()
             params['report_loss'], params['report_time'] = 0, time.time()
             params['report_correct'], params['report_total'] = 0, 0

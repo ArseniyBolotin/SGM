@@ -38,6 +38,8 @@ def model_opts(parser):
     parser.add_argument('-bert_tsv_dir', default='', type=str, 
                         help="Bert tokenizer from tsv file")
     parser.add_argument('-print_model', action='store_true')
+    parser.add_argument('-save_best_model', action='store_true')
+    
 
 
 def convert_to_config(opt, config):

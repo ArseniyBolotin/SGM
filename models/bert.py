@@ -14,9 +14,7 @@ class BertEncdoer(nn.Module):
             for param in self.bert_model.parameters():
                 param.requires_grad = False
         self.n_bert_features = self.bert_model.pooler.dense.in_features
-        self.dense = nn.Linear(self.n_bert_features, self.hidden_size)
 
     def forward(self, inputs, lens):
         bert_output = self.bert_model(**inputs)
-        encoder_output = self.dense(bert_output.last_hidden_state)
-        return encoder_output.transpose(0, 1), (torch.zeros(1, encoder_output.size(0), self.hidden_size, device='cuda'), torch.zeros(1, encoder_output.size(0), self.hidden_size, device='cuda'))
+        return bert_output.last_hidden_state.transpose(0, 1), (torch.unsqueeze(bert_output.pooler_output, 0), torch.unsqueeze(bert_output.pooler_output, 0))
